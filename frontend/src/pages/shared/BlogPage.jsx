@@ -68,7 +68,7 @@ export default function BlogPage() {
 
     const matchesUser =
       userSegmented === "all_blogs" ||
-      (userSegmented === "my_blogs" && blog.uploaderId === userId);
+      (userSegmented === "my_blogs" && blog.uploaderId._id === userId);
 
     return matchesSearch && matchesUser;
   });
