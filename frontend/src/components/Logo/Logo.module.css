@@ -1,0 +1,59 @@
+.logo {
+    display        : flex;
+    align-items    : center;
+    justify-content: center;
+    padding        : 1.2rem;
+    height         : 6rem;
+
+}
+
+.logo-icon {
+    display    : flex;
+    align-items: center;
+    gap        : 8px;
+    font-size  : 1.2rem;
+    font-weight: 500;
+    color      : #333;
+}
+
+.bookIcon {
+    font-size   : 1.8rem;
+    color       : #1677ff;
+    margin-right: 4px;
+    transition  : transform 0.3s ease;
+}
+
+.bookIcon:hover {
+    transform: scale(1.1);
+}
+
+.logoText {
+    margin        : 0;
+    font-family   : 'Poppins', sans-serif;
+    font-size     : 1.4rem;
+    font-weight   : 600;
+    letter-spacing: 0.5px;
+    color         : white;
+}
+
+.highlight {
+    color      : #1677ff;
+    font-weight: 700;
+    font-size  : 1.6rem;
+}
+
+/* For smaller screens */
+@media (max-width: 992px) {
+    .logoText {
+        display: none;
+    }
+
+    .highlight {
+        font-size: 1.4rem;
+    }
+
+    .bookIcon {
+        font-size   : 1.5rem;
+        margin-right: 0;
+    }
+}
