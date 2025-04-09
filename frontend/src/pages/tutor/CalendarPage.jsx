@@ -7,7 +7,7 @@ import { getNotificationsByTutor,markNotificationAsRead  } from "../../../api_se
 import { useNavigate } from "react-router";
 import { io } from "socket.io-client";
 
-const socket = io("https://etutoring-1640-1.onrender.com");
+const socket = io("https://etutoring-be.onrender.com");
 const { Content } = Layout;
 
 export default function CalendarPage() {
