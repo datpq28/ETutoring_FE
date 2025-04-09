@@ -100,7 +100,7 @@ export default function MessagePage() {
   }, [fetchConversations]);
 
   useEffect(() => {
-    const socketIo = io("https://etutoring-1640-1.onrender.com", {
+    const socketIo = io("https://etutoring-be.onrender.com", {
       transports: ["websocket", "polling"],
       withCredentials: true,
     });
