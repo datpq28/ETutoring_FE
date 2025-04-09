@@ -36,7 +36,7 @@ export default function ActivitySummary() {
       const documents = await getDocuments();
       console.log("documents", documents);
       const filteredDocuments = documents.filter(
-        (document) => document.uploaderId._id === userId
+        (document) => document.uploadedBy._id === userId
       );
       setDocuments(filteredDocuments);
     };
