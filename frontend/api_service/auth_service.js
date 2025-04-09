@@ -1,7 +1,7 @@
 import { notification } from "antd";
 import axios from "axios";
 
-const API_URL = "https://etutoring-1640-1.onrender.com";
+const API_URL = "https://etutoring-be.onrender.com";
 
 export const loginUser = async (email, password) => {
   try {
