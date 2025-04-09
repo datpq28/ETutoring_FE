@@ -1,11 +1,11 @@
 import axios from "axios";
 import io from "socket.io-client";
 
-const socket = io("https://etutoring-1640-1.onrender.com", {
+const socket = io("https://etutoring-be.onrender.com", {
   transports: ["websocket"], // Đảm bảo sử dụng websocket
 });
 
-const API_URL = "https://etutoring-1640-1.onrender.com";
+const API_URL = "https://etutoring-be.onrender.com";
 
 // Hàm lấy tất cả các tin nhắn trong hệ thống
 export const getAllMessages = async () => {
