@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = "https://etutoring-1640-1.onrender.com";
+const API_URL = "https://etutoring-be.onrender.com";
 
 // Tạo bình luận mới cho tài liệu
 export const createCommentDocument = async (documentId, commentData) => {
