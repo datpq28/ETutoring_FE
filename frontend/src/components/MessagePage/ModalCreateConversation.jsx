@@ -5,8 +5,7 @@ import {
   createConversations,
   getAllUser,
 } from "../../../api_service/mesages_service";
-const userId = localStorage.getItem("userId");
-const userModel = localStorage.getItem("role");
+
 export default function ModalCreateConversation({
   isOpen,
   onCancel,
@@ -17,6 +16,7 @@ export default function ModalCreateConversation({
   const [user, setUser] = useState(null);
   useEffect(() => {
     const fetchData = async () => {
+      const userId = localStorage.getItem("userId");
       try {
         const result = await getAllUser();
         if (
@@ -56,8 +56,8 @@ export default function ModalCreateConversation({
     selectedUserId,
     selectedUserModel
   ) => {
-    console.log("userListMap", userListMap);
-    console.log("conversationsByUser", conversationsByUser);
+    const userId = localStorage.getItem("userId");
+    const userModel = localStorage.getItem("role");
     if (!selectedUserId) {
       notification.error({
         message: "Please select a person to continue.",

@@ -6,12 +6,12 @@ import StudentTable from "../../components/tutor/DashboardPage/StudentTable";
 import ActivitySummary from "../../components/tutor/DashboardPage/ActivitySummary";
 const { Content } = Layout;
 const { Title, Text } = Typography;
-const userId = localStorage.getItem("userId");
-const role = localStorage.getItem("role");
+
 const DashboardPage = () => {
   const [user, setUser] = useState(null);
   useEffect(() => {
     const fetchUser = async () => {
+      const userId = localStorage.getItem("userId");
       const users = await getAllUser();
       const { tutors } = users;
       const user = tutors.find((user) => user?._id === userId);
