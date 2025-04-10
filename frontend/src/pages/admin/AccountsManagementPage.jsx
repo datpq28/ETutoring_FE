@@ -188,15 +188,6 @@ export default function AccountsManagementPage() {
   const columns = [
     { title: "Name", dataIndex: "name", key: "name" },
     { title: "Email", dataIndex: "email", key: "email" },
-    { title: "Phone", dataIndex: "phone", key: "phone" },
-    {
-      title: "Password",
-      dataIndex: "password",
-      key: "password",
-      render: (password) => (
-        <div style={{ wordBreak: "break-word" }}>{password}</div>
-      ),
-    },
     {
       title: "Role",
       dataIndex: "role",
