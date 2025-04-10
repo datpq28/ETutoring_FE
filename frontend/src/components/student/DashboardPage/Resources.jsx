@@ -5,16 +5,20 @@ import { getDocuments } from "../../../../api_service/document_service";
 import { formatTime } from "../../../utils/Date";
 const { Title, Text } = Typography;
 import { useNavigate } from "react-router";
+import LoadingSection from "../../common/LoadingSection";
 export default function Resources() {
   const [documents, setDocuments] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   useEffect(() => {
     const fetchDocuments = async () => {
+      setIsLoading(true);
       const documents = await getDocuments();
       const recentDocuments = documents
         .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) // Sắp xếp giảm dần theo thời gian tạo
         .slice(0, 4); // Lấy 4 file đầu tiên
       setDocuments(recentDocuments);
+      setIsLoading(false);
     };
     fetchDocuments();
   }, []);
@@ -53,18 +57,22 @@ export default function Resources() {
         </Button>
       }
     >
-      <Flex vertical gap="middle">
-        {documents.map((doc) => {
-          return (
-            <DocumentItem
-              key={doc._id}
-              title={doc.title}
-              fileType={doc.typeFile}
-              time={doc.createdAt}
-            />
-          );
-        })}
-      </Flex>
+      {isLoading ? (
+        <LoadingSection length={3} />
+      ) : (
+        <Flex vertical gap="middle">
+          {documents.map((doc) => {
+            return (
+              <DocumentItem
+                key={doc._id}
+                title={doc.title}
+                fileType={doc.typeFile}
+                time={doc.createdAt}
+              />
+            );
+          })}
+        </Flex>
+      )}
     </Card>
   );
 }
