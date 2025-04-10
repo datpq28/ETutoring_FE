@@ -6,7 +6,7 @@ import LoadingSection from "../../components/common/LoadingSection.jsx";
 import EmptySection from "../../components/common/EmptySection.jsx";
 import CardBlog from "../../components/BlogPage/CardBlog.jsx";
 import ModalBlogActions from "../../components/BlogPage/ModalBlogActions.jsx";
-const userId = localStorage.getItem("userId");
+
 const { Content } = Layout;
 export default function BlogPage() {
   const [blogs, setBlogs] = useState([]);
@@ -56,6 +56,7 @@ export default function BlogPage() {
     setSearchValue(value);
   };
   const filteredBlogs = blogs.filter((blog) => {
+    const userId = localStorage.getItem("userId");
     const matchesSearch =
       !searchValue ||
       (optionSearch === "title" &&

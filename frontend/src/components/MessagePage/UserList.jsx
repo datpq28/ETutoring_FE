@@ -20,7 +20,7 @@ import {
 import { useEffect, useState } from "react";
 import LoadingSection from "../common/LoadingSection";
 import { removeConversations } from "../../../api_service/mesages_service";
-const userId = localStorage.getItem("userId");
+
 export default function UserList({
   conversationsByUser,
   onSelectConversation,
@@ -125,6 +125,7 @@ export default function UserList({
         <Flex gap="small" vertical>
           {!(conversationsByUser.length === 0) ? (
             conversationsByUser.map((item, index) => {
+              const userId = localStorage.getItem("userId");
               const otherParticipant = item.participants.find(
                 (participant) => participant.participantId !== userId
               );

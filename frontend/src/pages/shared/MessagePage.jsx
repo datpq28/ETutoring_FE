@@ -15,8 +15,7 @@ import ModalCreateConversation from "../../components/MessagePage/ModalCreateCon
 import ChatBox from "../../components/MessagePage/ChatBox.jsx";
 
 const { Content } = Layout;
-const userId = localStorage.getItem("userId");
-const senderModel = localStorage.getItem("role");
+
 export default function MessagePage() {
   const [conversations, setConversations] = useState([]);
   const [currentConversationId, setCurrentConversationId] = useState(null);
@@ -150,6 +149,7 @@ export default function MessagePage() {
   };
 
   const handleSelectConversation = async (conversationId) => {
+    const userId = localStorage.getItem("userId");
     setCurrentConversationId(conversationId);
     try {
       const data = await getConversationById(conversationId);
@@ -179,6 +179,8 @@ export default function MessagePage() {
   };
 
   const handleSendMessage = async (newMessage) => {
+    const userId = localStorage.getItem("userId");
+    const senderModel = localStorage.getItem("role");
     if (newMessage.trim() === "") return;
 
     const newMsg = {

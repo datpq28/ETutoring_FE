@@ -11,7 +11,6 @@ import {
 } from "antd";
 import { useEffect, useRef, useState } from "react";
 import { getAllUser } from "../../../api_service/mesages_service";
-const userId = localStorage.getItem("userId");
 
 export default function ChatBox({
   messages,
@@ -75,43 +74,46 @@ export default function ChatBox({
         {messages.length === 0 ? (
           <Empty description="Not messages yet" />
         ) : (
-          messages.map((msg, index) => (
-            <Flex
-              key={index}
-              align="center"
-              justify={msg.senderId === userId ? "end" : "start"} // Thay đổi vị trí căn của người gửi và người nhận
-              style={{ marginTop: "1.6rem" }}
-            >
-              {msg.senderId !== userId && (
-                <Avatar
-                  style={{ marginRight: "0.5rem" }}
-                  src={`https://api.dicebear.com/7.x/miniavs/svg?seed=${otherParticipantId}`}
-                ></Avatar>
-              )}
-
-              <Card
-                size="small"
-                style={{
-                  background: msg.senderId === userId ? "#4096ff" : "#fff",
-                  color: msg.senderId === userId ? "#fff" : "#000",
-                }}
+          messages.map((msg, index) => {
+            const userId = localStorage.getItem("userId");
+            return (
+              <Flex
+                key={index}
+                align="center"
+                justify={msg.senderId === userId ? "end" : "start"} // Thay đổi vị trí căn của người gửi và người nhận
+                style={{ marginTop: "1.6rem" }}
               >
-                <Typography.Text
+                {msg.senderId !== userId && (
+                  <Avatar
+                    style={{ marginRight: "0.5rem" }}
+                    src={`https://api.dicebear.com/7.x/miniavs/svg?seed=${otherParticipantId}`}
+                  ></Avatar>
+                )}
+
+                <Card
+                  size="small"
                   style={{
-                    color: msg.senderId === userId ? "white" : "black",
+                    background: msg.senderId === userId ? "#4096ff" : "#fff",
+                    color: msg.senderId === userId ? "#fff" : "#000",
                   }}
                 >
-                  {msg.content}
-                </Typography.Text>
-              </Card>
-              {msg.senderId === userId && (
-                <Avatar
-                  style={{ marginLeft: "0.5rem" }}
-                  src={`https://api.dicebear.com/7.x/miniavs/svg?seed=${userId}`}
-                ></Avatar>
-              )}
-            </Flex>
-          ))
+                  <Typography.Text
+                    style={{
+                      color: msg.senderId === userId ? "white" : "black",
+                    }}
+                  >
+                    {msg.content}
+                  </Typography.Text>
+                </Card>
+                {msg.senderId === userId && (
+                  <Avatar
+                    style={{ marginLeft: "0.5rem" }}
+                    src={`https://api.dicebear.com/7.x/miniavs/svg?seed=${userId}`}
+                  ></Avatar>
+                )}
+              </Flex>
+            );
+          })
         )}
       </div>
 
