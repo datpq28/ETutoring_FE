@@ -227,17 +227,17 @@ export default function CalendarPage() {
                     ? meeting.studentIds.map((student) => `${student.firstname} ${student.lastname}`).join(", ")
                     : "Không có dữ liệu"}
                 </p>
-                {meetingDate.isBefore(tomorrow) && (
+                {meetingDate.isBefore(today) && (
                   <button disabled style={{ backgroundColor: "gray", color: "#fff", padding: "8px 16px" }}>
                     Attended
                   </button>
                 )}
-                {meetingDate.isSame(tomorrow) && role === "tutor" && (
+                {meetingDate.isSame(today) && role === "tutor" && (
                   <button onClick={() => handleStartMeeting(meeting)} style={{ backgroundColor: "green", color: "#fff", padding: "8px 16px" }}>
                     Start Meeting
                   </button>
                 )}
-                {meetingDate.isAfter(tomorrow) && (
+                {meetingDate.isAfter(today) && (
                   <button disabled style={{ backgroundColor: "blue", color: "#fff", padding: "8px 16px" }}>
                     Is Coming
                   </button>
