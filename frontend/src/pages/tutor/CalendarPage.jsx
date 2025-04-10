@@ -1,13 +1,16 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Layout, Calendar, Badge, Card, Modal, List, notification, Dropdown, Menu } from "antd";
 import { BellOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
 import { fetchMeetingsByTutor } from "../../../api_service/meeting_service";
-import { getNotificationsByTutor,markNotificationAsRead  } from "../../../api_service/notification_service";
+import { getNotificationsByTutor, markNotificationAsRead } from "../../../api_service/notification_service";
 import { useNavigate } from "react-router";
 import { io } from "socket.io-client";
 
-const socket = io("https://etutoring-be.onrender.com");
+dayjs.extend(relativeTime);
+
+const socket = io("http://localhost:5090");
 const { Content } = Layout;
 
 export default function CalendarPage() {
@@ -20,6 +23,27 @@ export default function CalendarPage() {
   const [unreadCount, setUnreadCount] = useState(0);
   const navigate = useNavigate();
 
+  const loadInitialData = useCallback(async (tutorId) => {
+    if (tutorId) {
+      const meetingsData = await fetchMeetingsByTutor(tutorId);
+      setMeetings(meetingsData.filter((meeting) => meeting.tutorId._id === tutorId));
+      loadNotifications(tutorId);
+    }
+  }, []);
+
+  const loadNotifications = useCallback(async (tutorId) => {
+    if (tutorId) {
+      const { notifications: newNotifications, unreadCount: newUnreadCount } = await getNotificationsByTutor(tutorId);
+      if (
+        JSON.stringify(newNotifications) !== JSON.stringify(notifications) ||
+        newUnreadCount !== unreadCount
+      ) {
+        setNotifications(newNotifications);
+        setUnreadCount(newUnreadCount);
+      }
+    }
+  }, [notifications, unreadCount]);
+
   useEffect(() => {
     const storedRole = localStorage.getItem("role");
     const storedTutorId = localStorage.getItem("userId");
@@ -27,84 +51,85 @@ export default function CalendarPage() {
     if (storedRole === "tutor" && storedTutorId) {
       setRole("tutor");
       setTutorId(storedTutorId);
-      loadMeetings(storedTutorId);
-      loadNotifications(storedTutorId);
+      loadInitialData(storedTutorId);
+      socket.emit("register_user", { tutorId: storedTutorId, role: storedRole });
+
+      const notificationInterval = setInterval(() => {
+        loadNotifications(storedTutorId);
+      }, 5000); // Fetch notifications every 5 seconds
+
+      return () => {
+        clearInterval(notificationInterval);
+        socket.off("new-notification");
+        socket.off("new-meeting");
+        socket.off("meeting-created-by-admin");
+      };
     }
-  }, []);
-
-  const loadMeetings = async (tutorId) => {
-    const data = await fetchMeetingsByTutor(tutorId);
-    setMeetings(data.filter(meeting => meeting.tutorId._id === tutorId));
-  };
-
-  const loadNotifications = async (tutorId) => {
-    const { notifications, unreadCount } = await getNotificationsByTutor(tutorId);
-    setNotifications(notifications);
-    setUnreadCount(unreadCount);
-};
+  }, [loadInitialData, loadNotifications]);
 
   useEffect(() => {
+    if (!tutorId) return;
+
+    socket.on("new-notification", (data) => {
+      if (data.tutorId === tutorId) {
+        loadNotifications(tutorId); // Tự động cập nhật danh sách thông báo
+        notification.info({
+          message: "Thông báo mới",
+          description: data.message || "Bạn có thông báo mới",
+          duration: 3,
+          onClick: () => navigate(`/tutor/meeting/${data.meetingId}`),
+        });
+      }
+    });
+
     socket.on("new-meeting", (data) => {
       if (data.type === "tutor" && data.tutorId === tutorId) {
         setNotifications((prev) => [...prev, data]);
         setUnreadCount((prev) => prev + 1);
-
         notification.info({
-          message: "New meeting created",
+          message: "Cuộc họp mới",
           description: data.message,
           onClick: () => navigate(`/tutor/meeting/${data.meetingId}`),
         });
       }
     });
 
-    return () => {
-      socket.off("new-meeting");
-    };
-  }, [tutorId]);
-
-  useEffect(() => {
-    if (!tutorId) return;
-  
-    socket.emit('register_user', { tutorId, role });
-
-    socket.on('meeting-created-by-admin', (data) => {
-      setMeetings(prev => [...prev, data.meeting]);
-      
+    socket.on("meeting-created-by-admin", (data) => {
+      setMeetings((prev) => [...prev, data.meeting]);
       notification.info({
-        message: 'Cuộc họp mới từ Admin',
+        message: "Cuộc họp từ Admin",
         description: `Cuộc họp "${data.meeting.name}" đã được tạo bởi Admin`,
         onClick: () => navigate(`/meeting/${data.meeting._id}`),
       });
     });
-  
+
     return () => {
-      socket.off('meeting-created-by-admin');
+      socket.off("new-notification");
+      socket.off("new-meeting");
+      socket.off("meeting-created-by-admin");
     };
-  }, [tutorId, role]);
+  }, [tutorId, navigate, loadNotifications]);
 
   const handleStartMeeting = (meeting) => {
-    if (!meeting || !meeting._id) {
-      console.error("Meeting ID is undefined!", meeting);
-      return;
-    }
+    if (!meeting || !meeting._id) return;
     socket.emit("start_call", { meetingId: meeting._id, tutorId: meeting.tutorId });
     navigate(`/tutor/meeting/${meeting._id}`);
   };
 
   const handleNotificationClick = async (notif) => {
-    if (notif.isRead) return; 
+    if (notif.isRead) return;
+
     setUnreadCount((prev) => Math.max(prev - 1, 0));
     setNotifications((prev) =>
-        prev.map((n) => (n._id === notif._id ? { ...n, isRead: true } : n))
+      prev.map((n) => (n._id === notif._id ? { ...n, isRead: true } : n))
     );
 
     try {
-        await markNotificationAsRead(notif._id);
+      await markNotificationAsRead(notif._id);
     } catch (error) {
-        console.error("Error while updating notification status:", error);
+      console.error("Error marking notification as read:", error);
     }
-};
-
+  };
 
   const dateCellRender = (value) => {
     const formattedDate = value.format("YYYY-MM-DD");
@@ -135,50 +160,42 @@ export default function CalendarPage() {
   };
 
   const notificationMenu = (
-    <Menu style={{ width: 320, maxHeight: 400, overflowY: "auto", borderRadius: 8, boxShadow: "0 2px 8px rgba(0, 0, 0, 0.2)" }}>
-        <Menu.Item style={{ fontWeight: "bold", textAlign: "center", background: "#f0f2f5" }}>
-            Notification
-        </Menu.Item>
-        {Array.isArray(notifications) && notifications.length > 0 ?  (
-            notifications.map((notif) => (
-                <Menu.Item 
-                    key={notif._id} 
-                    onClick={() => !notif.isRead && handleNotificationClick(notif)}
-                    style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "10px",
-                        backgroundColor: notif.isRead ? "#f0f2f5" : "#ffffff", 
-                        fontWeight: notif.isRead ? "normal" : "bold",
-                        padding: "10px",
-                        borderBottom: "1px solid #e0e0e0",
-                        cursor: notif.isRead ? "default" : "pointer"
-                    }}
-                >
-                    <div style={{ flex: 1 }}>
-                        <p style={{ margin: 0 }}>{notif.text}</p>
-                        <small style={{ color: "#888" }}>{dayjs(notif.time).fromNow()}</small>
-                    </div>
-                </Menu.Item>
-            ))
-        ) : (
-            <Menu.Item style={{ textAlign: "center", padding: "12px", color: "#888" }}>
-               No notification
-            </Menu.Item>
-        )}
+    <Menu style={{ width: 320, maxHeight: 400, overflowY: "auto", borderRadius: 8 }}>
+      <Menu.Item style={{ fontWeight: "bold", textAlign: "center", background: "#f0f2f5" }}>
+        Thông báo
+      </Menu.Item>
+      {notifications.length > 0 ? (
+        notifications.map((notif) => (
+          <Menu.Item
+            key={notif._id}
+            onClick={() => handleNotificationClick(notif)}
+            style={{
+              backgroundColor: notif.isRead ? "#f0f2f5" : "#fff",
+              fontWeight: notif.isRead ? "normal" : "bold",
+              padding: "10px",
+              borderBottom: "1px solid #e0e0e0",
+            }}
+          >
+            <div>
+              <p style={{ margin: 0 }}>{notif.text}</p>
+              <small style={{ color: "#888" }}>{dayjs(notif.time).fromNow()}</small>
+            </div>
+          </Menu.Item>
+        ))
+      ) : (
+        <Menu.Item style={{ textAlign: "center", color: "#888" }}>Không có thông báo</Menu.Item>
+      )}
     </Menu>
-);
-
-
+  );
 
   return (
     <Content style={{ padding: "2rem" }}>
-      <Layout.Header style={{ display: "flex", justifyContent: "flex-end", padding: "0 20px", background: "#fff" }}>
-      <Dropdown overlay={notificationMenu} trigger={["click"]}>
-        <Badge count={unreadCount} style={{ backgroundColor: "#f5222d" }}>
+      <Layout.Header style={{ display: "flex", justifyContent: "flex-end", background: "#fff" }}>
+        <Dropdown overlay={notificationMenu} trigger={["click"]}>
+          <Badge count={unreadCount} style={{ backgroundColor: "#f5222d" }}>
             <BellOutlined style={{ fontSize: "24px", cursor: "pointer" }} />
-        </Badge>
-    </Dropdown>
+          </Badge>
+        </Dropdown>
       </Layout.Header>
 
       <Card>
@@ -186,7 +203,7 @@ export default function CalendarPage() {
       </Card>
 
       <Modal
-        title="Meeting List"
+        title="Danh sách cuộc họp"
         open={isMeetingListVisible}
         onCancel={() => setIsMeetingListVisible(false)}
         footer={null}
@@ -202,42 +219,33 @@ export default function CalendarPage() {
             return (
               <List.Item key={meeting._id}>
                 <h3>{meeting.name}</h3>
-              
-                <p><strong>Time:</strong> {dayjs(meeting.startTime).format("HH:mm")} - {dayjs(meeting.endTime).format("HH:mm")}</p>
-                <p><strong>Description:</strong> {meeting.description || "No description"}</p>
+                <p><strong>Thời gian:</strong> {dayjs(meeting.startTime).format("HH:mm")} - {dayjs(meeting.endTime).format("HH:mm")}</p>
+                <p><strong>Mô tả:</strong> {meeting.description || "Không có mô tả"}</p>
                 <p>
-                  <strong>Students participate:</strong>{" "}
+                  <strong>Học sinh:</strong>{" "}
                   {Array.isArray(meeting.studentIds)
                     ? meeting.studentIds.map((student) => `${student.firstname} ${student.lastname}`).join(", ")
-                    : "No data available"}
+                    : "Không có dữ liệu"}
                 </p>
-
-                {/* Conditionally render buttons based on the meeting date */}
-                {meetingDate.isBefore(today) && (
-                  <button className="attended-btn"
-                  style={{ backgroundColor: "gray", color: "white", border: "none", padding: "8px 16px", cursor: "not-allowed" }}
-                  disabled >
+                {meetingDate.isBefore(tomorrow) && (
+                  <button disabled style={{ backgroundColor: "gray", color: "#fff", padding: "8px 16px" }}>
                     Attended
                   </button>
                 )}
-                {meetingDate.isSame(today) && role === "tutor" && (
-                  <button className="start-meeting-btn"
-                  style={{ backgroundColor: "green", color: "white", border: "none", padding: "8px 16px", cursor: "pointer" }}
-                  onClick={() => handleStartMeeting(meeting)}>
+                {meetingDate.isSame(tomorrow) && role === "tutor" && (
+                  <button onClick={() => handleStartMeeting(meeting)} style={{ backgroundColor: "green", color: "#fff", padding: "8px 16px" }}>
                     Start Meeting
                   </button>
                 )}
-                {meetingDate.isAfter(today) && (
-                  <button className="is-coming-btn" 
-                  style={{ backgroundColor: "blue", color: "white", border: "none", padding: "8px 16px", cursor: "not-allowed" }}
-                  disabled>
+                {meetingDate.isAfter(tomorrow) && (
+                  <button disabled style={{ backgroundColor: "blue", color: "#fff", padding: "8px 16px" }}>
                     Is Coming
                   </button>
                 )}
               </List.Item>
             );
           }}
-/>
+        />
       </Modal>
     </Content>
   );
