@@ -125,7 +125,7 @@ export default function ChatBox({
             placeholder="Type a message..."
             autoSize={{ minRows: 1, maxRows: 4 }}
           />
-          <Button type="primary" icon={<SendOutlined />} />
+          <Button htmlType="primary" icon={<SendOutlined />} />
         </Flex>
       </Form>
     </Card>
