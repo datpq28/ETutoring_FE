@@ -15,8 +15,6 @@ import {
   editDocument,
 } from "../../../api_service/document_service.js";
 
-const userId = localStorage.getItem("userId");
-
 const selectSubject = [
   {
     value: "Math",
@@ -90,6 +88,7 @@ export default function AddDocumentModal({
 
   // Xử lý khi submit form
   const handleSubmit = async () => {
+    const userId = localStorage.getItem("userId");
     if (!file && !fileUpdate) {
       message.error("Please choose one file to upload!");
       return;

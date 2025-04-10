@@ -12,8 +12,7 @@ import { getDocuments } from "../../../../api_service/document_service";
 import { fetchMeetingsByTutor } from "../../../../api_service/meeting_service";
 
 const { Title, Text } = Typography;
-const userId = localStorage.getItem("userId");
-const role = localStorage.getItem("role");
+
 export default function ActivitySummary() {
   const [conversations, setConversations] = useState([]);
   const [blogs, setBlogs] = useState([]);
@@ -22,10 +21,13 @@ export default function ActivitySummary() {
 
   useEffect(() => {
     const fetchConversations = async () => {
+      const userId = localStorage.getItem("userId");
+      const role = localStorage.getItem("role");
       const conversations = await getConversations(userId, role);
       setConversations(conversations);
     };
     const fetchBlogs = async () => {
+      const userId = localStorage.getItem("userId");
       const blogs = await getBlogs();
       const filteredBlogs = blogs.filter(
         (blog) => blog.uploaderId._id === userId
@@ -33,6 +35,7 @@ export default function ActivitySummary() {
       setBlogs(filteredBlogs);
     };
     const fetchDocuments = async () => {
+      const userId = localStorage.getItem("userId");
       const documents = await getDocuments();
       console.log("documents", documents);
       const filteredDocuments = documents.filter(
@@ -42,6 +45,7 @@ export default function ActivitySummary() {
     };
 
     const getMeetings = async () => {
+      const userId = localStorage.getItem("userId");
       const data = await fetchMeetingsByTutor(userId);
       if (data) {
         setMeetings(data);

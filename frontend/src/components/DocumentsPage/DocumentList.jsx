@@ -22,8 +22,6 @@ import {
 import AddDocumentModal from "./AddDocumentModal.jsx";
 import DetailDocumentModal from "./DetailDocumentModal.jsx";
 
-const role = localStorage.getItem("role");
-const userId = localStorage.getItem("userId");
 export default function DocumentList({
   documents,
   fetchDocuments,
@@ -171,8 +169,9 @@ export default function DocumentList({
       title: "Action",
       key: "action",
       render: (_, record) => {
-        console.log("record", record);
-        console.log("role", role);
+        const role = localStorage.getItem("role");
+        const userId = localStorage.getItem("userId");
+
         return (
           <Space size="middle">
             <Button

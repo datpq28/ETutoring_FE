@@ -1,5 +1,14 @@
 import { CalendarOutlined } from "@ant-design/icons";
-import { Avatar, Button, Card, Divider, Flex, Space, Typography } from "antd";
+import {
+  Avatar,
+  Button,
+  Card,
+  Divider,
+  Empty,
+  Flex,
+  Space,
+  Typography,
+} from "antd";
 import { useEffect, useState } from "react";
 import { fetchMeetingsByTutor } from "../../../../api_service/meeting_service";
 import LoadingSection from "../../common/LoadingSection";
@@ -26,60 +35,60 @@ export default function UpcomingMeetings() {
     getMeetings();
   }, []);
   return (
-    <>
-      {loading ? (
-        <LoadingSection length={3} />
-      ) : (
-        <Card
-          title={
-            <Flex vertical gap="small">
-              <Title level={3} style={{ margin: 0 }}>
-                Upcoming Meetings
-              </Title>
-              <Text level={5} style={{ margin: 0, color: "#7b889c" }}>
-                Your scheduled meetings
-              </Text>
-            </Flex>
-          }
-          classNames={{
-            header: "my-card",
-          }}
-          styles={{
-            header: {
-              color: "white",
-              width: "100%",
-              paddingTop: "1.6rem",
-              paddingBottom: "1.6rem",
-            },
-          }}
-          extra={
-            <Button
-              color="default"
-              variant="filled"
-              icon={<CalendarOutlined />}
-              onClick={() => navigate("/tutor/calendar")}
-            >
-              View All
-            </Button>
-          }
+    <Card
+      title={
+        <Flex vertical gap="small">
+          <Title level={3} style={{ margin: 0 }}>
+            Upcoming Meetings
+          </Title>
+          <Text level={5} style={{ margin: 0, color: "#7b889c" }}>
+            Your scheduled meetings
+          </Text>
+        </Flex>
+      }
+      classNames={{
+        header: "my-card",
+      }}
+      styles={{
+        header: {
+          color: "white",
+          width: "100%",
+          paddingTop: "1.6rem",
+          paddingBottom: "1.6rem",
+        },
+      }}
+      extra={
+        <Button
+          color="default"
+          variant="filled"
+          icon={<CalendarOutlined />}
+          onClick={() => navigate("/tutor/calendar")}
         >
-          <Flex vertical gap="middle">
-            {meetings.map((item) => {
-              return (
-                <MeetingItem
-                  key={item._id}
-                  date={formatTime(item.startTime)}
-                  timeStart={showTime(item.startTime)}
-                  timeEnd={showTime(item.endTime)}
-                  name={item.name}
-                  id={item._id}
-                />
-              );
-            })}
-          </Flex>
-        </Card>
-      )}
-    </>
+          View All
+        </Button>
+      }
+    >
+      <Flex vertical gap="middle">
+        {loading ? (
+          <LoadingSection length={3} />
+        ) : meetings.length === 0 ? (
+          <Empty description="No meetings scheduled recent" />
+        ) : (
+          meetings.map((item) => {
+            return (
+              <MeetingItem
+                key={item._id}
+                date={formatTime(item.startTime)}
+                timeStart={showTime(item.startTime)}
+                timeEnd={showTime(item.endTime)}
+                name={item.name}
+                id={item._id}
+              />
+            );
+          })
+        )}
+      </Flex>
+    </Card>
   );
 }
 

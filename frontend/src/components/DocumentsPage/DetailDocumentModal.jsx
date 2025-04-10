@@ -29,7 +29,6 @@ import {
 } from "../../../api_service/commentdocument_service";
 import { formatTime } from "../../utils/Date";
 import LoadingSection from "../common/LoadingSection";
-const userId = localStorage.getItem("userId");
 
 export default function DetailDocumentModal({ open, onCancel, document }) {
   const [commentContent, setCommentContent] = useState("");
@@ -139,6 +138,7 @@ export default function DetailDocumentModal({ open, onCancel, document }) {
                   itemLayout="horizontal"
                   dataSource={comments || []}
                   renderItem={(item, index) => {
+                    const userId = localStorage.getItem("userId");
                     return (
                       <List.Item
                         key={index}

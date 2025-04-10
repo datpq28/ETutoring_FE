@@ -10,8 +10,6 @@ import { useState, useEffect, useRef } from "react";
 import AddDocumentModal from "./AddDocumentModal.jsx";
 
 const role = localStorage.getItem("role");
-const userId = localStorage.getItem("userId");
-
 // Simplified file type options
 const selectTypeFile = [
   {
@@ -120,6 +118,7 @@ export default function DocumentActionsBar({
   }, [fileType, subject, searchText, viewMode]);
 
   const applyFilters = () => {
+    const userId = localStorage.getItem("userId");
     isFiltering.current = true;
 
     // Start with all original documents
