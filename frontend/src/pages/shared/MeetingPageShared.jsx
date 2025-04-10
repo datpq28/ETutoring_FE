@@ -22,8 +22,8 @@ export default function MeetingPageShared() {
   const [isConnected, setIsConnected] = useState(false);
   const [isCameraEnabled, setIsCameraEnabled] = useState(true);
   const [isMicEnabled, setIsMicEnabled] = useState(true);
-
   const userRole = localStorage.getItem("role");
+  const userId = localStorage.getItem("userId");
   const isLeaving = useRef(false);
   const navigate = useNavigate();
 
@@ -42,7 +42,10 @@ export default function MeetingPageShared() {
         });
         setLocalStream(stream);
         currentLocalStream = stream;
-        setPeers((prev) => ({ ...prev, local: { stream } }));
+        setPeers((prev) => ({
+          ...prev,
+          [userId]: { stream }, // Store by userId instead of 'local'
+        }));
       } catch (error) {
         console.error("Error accessing media devices:", error);
       }
@@ -50,11 +53,8 @@ export default function MeetingPageShared() {
 
     getMedia();
 
-    const userId = localStorage.getItem("userId");
-    const role = localStorage.getItem("role");
-
-    if (userId && role) {
-      socket.current.emit("register_user", { userId, role });
+    if (userId && userRole) {
+      socket.current.emit("register_user", { userId, role: userRole });
     }
 
     socket.current.emit("join_room", { meetingId });
@@ -63,40 +63,34 @@ export default function MeetingPageShared() {
       setIsConnected(true);
     });
 
-    socket.current.on("user_joined", ({ userId }) => {
-      if (userId !== socket.current.id) {
-        createPeerConnection(userId, true, currentLocalStream);
+    socket.current.on("user_joined", ({ userId: newUserId }) => {
+      if (newUserId !== userId && !peerConnections.current[newUserId]) {
+        createPeerConnection(newUserId, true, currentLocalStream);
       }
     });
 
-    socket.current.on("offer", async ({ userId, offer }) => {
-      if (!peerConnections.current[userId]) {
-        const peerConnection = createPeerConnection(
-          userId,
-          false,
-          currentLocalStream
-        );
-        await peerConnection.setRemoteDescription(
-          new RTCSessionDescription(offer)
-        );
-        const answer = await peerConnection.createAnswer();
-        await peerConnection.setLocalDescription(answer);
-        socket.current.emit("answer", { userId, answer });
+    socket.current.on("offer", async ({ userId: remoteUserId, offer }) => {
+      if (!peerConnections.current[remoteUserId]) {
+        const pc = createPeerConnection(remoteUserId, false, currentLocalStream);
+        await pc.setRemoteDescription(new RTCSessionDescription(offer));
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        socket.current.emit("answer", { userId: remoteUserId, answer });
       }
     });
 
-    socket.current.on("answer", async ({ userId, answer }) => {
-      if (peerConnections.current[userId]) {
-        await peerConnections.current[userId].setRemoteDescription(
+    socket.current.on("answer", async ({ userId: remoteUserId, answer }) => {
+      if (peerConnections.current[remoteUserId]) {
+        await peerConnections.current[remoteUserId].setRemoteDescription(
           new RTCSessionDescription(answer)
         );
       }
     });
 
-    socket.current.on("ice_candidate", async ({ userId, candidate }) => {
-      if (peerConnections.current[userId]) {
+    socket.current.on("ice_candidate", async ({ userId: remoteUserId, candidate }) => {
+      if (peerConnections.current[remoteUserId]) {
         try {
-          await peerConnections.current[userId].addIceCandidate(
+          await peerConnections.current[remoteUserId].addIceCandidate(
             new RTCIceCandidate(candidate)
           );
         } catch (error) {
@@ -105,14 +99,14 @@ export default function MeetingPageShared() {
       }
     });
 
-    socket.current.on("user_left", ({ userId }) => {
-      if (peerConnections.current[userId]) {
-        peerConnections.current[userId].close();
-        delete peerConnections.current[userId];
+    socket.current.on("user_left", ({ userId: leftUserId }) => {
+      if (peerConnections.current[leftUserId]) {
+        peerConnections.current[leftUserId].close();
+        delete peerConnections.current[leftUserId];
       }
       setPeers((prev) => {
         const updatedPeers = { ...prev };
-        delete updatedPeers[userId];
+        delete updatedPeers[leftUserId];
         return updatedPeers;
       });
     });
@@ -139,7 +133,7 @@ export default function MeetingPageShared() {
     };
   }, [meetingId]);
 
-  const createPeerConnection = (userId, isInitiator, stream) => {
+  const createPeerConnection = (remoteUserId, isInitiator, stream) => {
     const peerConnection = new RTCPeerConnection({
       iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
     });
@@ -151,25 +145,25 @@ export default function MeetingPageShared() {
     peerConnection.ontrack = (event) => {
       setPeers((prev) => ({
         ...prev,
-        [userId]: { stream: event.streams[0] },
+        [remoteUserId]: { stream: event.streams[0] },
       }));
     };
 
     peerConnection.onicecandidate = (event) => {
       if (event.candidate && socket.current) {
         socket.current.emit("ice_candidate", {
-          userId,
+          userId: remoteUserId,
           candidate: event.candidate,
         });
       }
     };
 
-    peerConnections.current[userId] = peerConnection;
+    peerConnections.current[remoteUserId] = peerConnection;
 
     if (isInitiator) {
       peerConnection.createOffer().then((offer) => {
         peerConnection.setLocalDescription(offer);
-        socket.current.emit("offer", { userId, offer });
+        socket.current.emit("offer", { userId: remoteUserId, offer });
       });
     }
 
@@ -258,10 +252,10 @@ export default function MeetingPageShared() {
               }}
               autoPlay
               playsInline
-              muted={id === "local"}
+              muted={id === userId} // Only mute local stream
               style={{ width: "100%" }}
             />
-            {id === "local" && (
+            {id === userId && (
               <div
                 style={{
                   position: "absolute",
