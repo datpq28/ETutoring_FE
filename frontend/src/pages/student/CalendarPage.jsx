@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Layout, Calendar, Badge, Card, Modal, List, Button, Menu, Dropdown } from "antd";
+import { useState, useEffect, useCallback } from "react";
+import { Layout, Calendar, Badge, Card, Modal, List, Button, Menu, Dropdown, notification } from "antd";
 import dayjs from "dayjs";
 import { BellOutlined } from "@ant-design/icons";
 import { fetchMeetingsByStudent } from "../../../api_service/meeting_service";
@@ -7,7 +7,7 @@ import { getNotificationsByStudent, markNotificationAsRead } from "../../../api_
 import { useNavigate } from "react-router";
 import { io } from "socket.io-client";
 
-const socket = io("https://etutoring-be.onrender.com");
+const socket = io("http://localhost:5090");
 const { Content } = Layout;
 
 export default function CalendarPage() {
@@ -15,57 +15,73 @@ export default function CalendarPage() {
   const [selectedDateMeetings, setSelectedDateMeetings] = useState([]);
   const [isMeetingListVisible, setIsMeetingListVisible] = useState(false);
   const navigate = useNavigate();
-
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [storedStudentId, setStudentId] = useState(null);
+  const [studentId, setStudentId] = useState(null);
+
+  const loadInitialData = useCallback(async (studentId) => {
+    if (studentId) {
+      const meetingsData = await fetchMeetingsByStudent(studentId);
+      setMeetings(meetingsData);
+      loadNotifications(studentId);
+    }
+  }, []);
+
+  const loadNotifications = useCallback(async (studentId) => {
+    if (studentId) {
+      try {
+        const fetchedNotifications = await getNotificationsByStudent(studentId);
+        setNotifications(fetchedNotifications || []);
+        setUnreadCount(fetchedNotifications?.filter((notif) => !notif.isRead)?.length || 0);
+      } catch (error) {
+        console.error("Error loading notifications for student:", error);
+        setNotifications([]);
+        setUnreadCount(0);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     const storedStudentId = localStorage.getItem("userId");
     if (storedStudentId) {
       setStudentId(storedStudentId);
-      loadMeetings(storedStudentId);
-      loadNotifications(storedStudentId); 
+      loadInitialData(storedStudentId);
+      socket.emit("register_user", { studentId: storedStudentId, role: "student" });
+
+      const notificationInterval = setInterval(() => {
+        loadNotifications(storedStudentId);
+      }, 5000); // Fetch notifications every 5 seconds
+
+      socket.on("new-notification", (data) => {
+        if (data.studentId === storedStudentId) {
+          loadNotifications(storedStudentId);
+          notification.info({
+            message: "New Notification",
+            description: data.message || "You have a new notification",
+            duration: 3,
+            onClick: () => navigate(`/student/meeting/${data.meetingId}`),
+          });
+        }
+      });
+
+      socket.on("meeting_started", ({ meetingId }) => {
+        setMeetings((prev) =>
+          prev.map((m) => (m._id === meetingId ? { ...m, isLive: true } : m))
+        );
+      });
+
+      return () => {
+        clearInterval(notificationInterval);
+        socket.off("new-notification");
+        socket.off("meeting_started");
+      };
     }
-
-    socket.on("meeting_started", ({ meetingId }) => {
-      setMeetings((prev) =>
-        prev.map((m) => (m._id === meetingId ? { ...m, isLive: true } : m))
-      );
-    });
-
-    return () => {
-      socket.off("meeting_started");
-    };
-  }, []);
-
-  const loadMeetings = async (studentId) => {
-    const data = await fetchMeetingsByStudent(studentId);
-    setMeetings(data); 
-  };
-
-  const loadNotifications = async (studentId) => {
-    try {
-      const notifications = await getNotificationsByStudent(studentId); 
-      setNotifications(notifications || []); // Ensure notifications is always an array
-      const unreadCount = notifications.filter((notif) => !notif.isRead).length; // Calculate unread count
-      setUnreadCount(unreadCount);
-      console.log("Notifications loaded:", notifications);
-      console.log("Unread count loaded:", unreadCount);
-    } catch (error) {
-      console.error("Error loading notifications for student:", error);
-      setNotifications([]); // Reset to empty array on error
-      setUnreadCount(0); // Reset unread count on error
-    }
-  };
+  }, [loadInitialData, loadNotifications, navigate]);
 
   const handleNotificationClick = async (notif) => {
-    if (notif.isRead) return; // If already read, do nothing
+    if (notif.isRead) return;
 
-    // Decrease unread count immediately
     setUnreadCount((prev) => Math.max(prev - 1, 0));
-
-    // Update notification state immediately
     setNotifications((prev) =>
       prev.map((n) => (n._id === notif._id ? { ...n, isRead: true } : n))
     );
@@ -77,11 +93,9 @@ export default function CalendarPage() {
     }
   };
 
-
   const handleJoinMeeting = (meetingId) => {
     navigate(`/student/meeting/${meetingId}`);
   };
-
 
   const dateCellRender = (value) => {
     const formattedDate = value.format("YYYY-MM-DD");
@@ -132,12 +146,12 @@ export default function CalendarPage() {
           background: "#f0f2f5",
         }}
       >
-       Notification
+        Notifications
       </Menu.Item>
       {(notifications || []).length > 0 ? (
         notifications.map((notif, index) => (
           <Menu.Item
-            key={notif._id || `notif-${index}`} // Use notif._id or fallback to index
+            key={notif._id || `notif-${index}`}
             onClick={() => !notif.isRead && handleNotificationClick(notif)}
             style={{
               display: "flex",
@@ -164,7 +178,7 @@ export default function CalendarPage() {
             color: "#888",
           }}
         >
-          No notification
+          No notifications
         </Menu.Item>
       )}
     </Menu>
@@ -183,9 +197,9 @@ export default function CalendarPage() {
         <Calendar dateCellRender={dateCellRender} />
       </Card>
 
-      {/* List of meetings by day method */}
+      {/* Modal for Meeting List */}
       <Modal
-        title="List of meetings"
+        title="Meeting List"
         open={isMeetingListVisible}
         onCancel={() => setIsMeetingListVisible(false)}
         footer={null}
@@ -197,23 +211,27 @@ export default function CalendarPage() {
             <List.Item key={meeting._id}>
               <h3>{meeting.name}</h3>
               <p>
-                <strong>Time:</strong>{" "}
-                {dayjs(meeting.startTime).format("HH:mm")} -{" "}
+                <strong>Time:</strong> {dayjs(meeting.startTime).format("HH:mm")} -{" "}
                 {dayjs(meeting.endTime).format("HH:mm")}
               </p>
               <p>
                 <strong>Description:</strong> {meeting.description || "No description"}
               </p>
               <p>
-                <strong>Tutor:</strong> {meeting.tutorId?.firstname}{" "}
-                {meeting.tutorId?.lastname}
+                <strong>Tutor:</strong> {meeting.tutorId?.firstname} {meeting.tutorId?.lastname}
               </p>
 
-              {/*"Join Call" button if the meeting is live */}
+              {/* "Join" Button if meeting is live */}
               {meeting.isLive && (
                 <Button type="primary" onClick={() => handleJoinMeeting(meeting._id)}>
-                  Join Call
+                  Join
                 </Button>
+              )}
+              {!meeting.isLive && dayjs(meeting.startTime).isAfter(dayjs()) && (
+                <Button disabled>Upcoming</Button>
+              )}
+              {!meeting.isLive && dayjs(meeting.endTime).isBefore(dayjs()) && (
+                <Button disabled>Ended</Button>
               )}
             </List.Item>
           )}
