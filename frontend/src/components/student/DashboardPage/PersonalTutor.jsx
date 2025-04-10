@@ -6,7 +6,6 @@ import LoadingSection from "../../common/LoadingSection";
 import { useNavigate } from "react-router";
 
 const { Title, Text } = Typography;
-const userId = localStorage.getItem("userId");
 
 export default function PersonalTutor() {
   let navigate = useNavigate();
@@ -14,6 +13,7 @@ export default function PersonalTutor() {
   const [loading, setLoading] = useState(true);
   useEffect(() => {
     const getTutor = async () => {
+      const userId = localStorage.getItem("userId");
       const data = await viewListTutorByStudent(userId);
       if (data) {
         setTutor(data.tutor);

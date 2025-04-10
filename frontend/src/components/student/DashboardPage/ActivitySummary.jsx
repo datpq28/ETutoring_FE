@@ -12,8 +12,7 @@ import { getCommentsByDocument } from "../../../../api_service/commentdocument_s
 import { getBlogs } from "../../../../api_service/blog_service";
 import { fetchMeetingsByStudent } from "../../../../api_service/meeting_service";
 const { Title, Text } = Typography;
-const userId = localStorage.getItem("userId");
-const role = localStorage.getItem("role");
+
 export default function ActivitySummary() {
   const [conversations, setConversations] = useState([]);
   const [commentsDoc, setCommentsDoc] = useState([]);
@@ -21,10 +20,13 @@ export default function ActivitySummary() {
   const [meetings, setMeetings] = useState([]);
   useEffect(() => {
     const fetchConversations = async () => {
+      const userId = localStorage.getItem("userId");
+      const role = localStorage.getItem("role");
       const conversations = await getConversations(userId, role);
       setConversations(conversations);
     };
     const fetchCommentsDocuments = async () => {
+      const userId = localStorage.getItem("userId");
       const documents = await getDocuments();
       const allComments = [];
 
@@ -39,6 +41,7 @@ export default function ActivitySummary() {
       setCommentsDoc(allComments);
     };
     const fetchBlogs = async () => {
+      const userId = localStorage.getItem("userId");
       const blogs = await getBlogs();
       const filteredBlogs = blogs.filter(
         (blog) => blog.uploaderId._id === userId
@@ -46,6 +49,7 @@ export default function ActivitySummary() {
       setBlogs(filteredBlogs);
     };
     const getAllMeetings = async () => {
+      const userId = localStorage.getItem("userId");
       const data = await fetchMeetingsByStudent(userId);
       if (data) {
         setMeetings(data);

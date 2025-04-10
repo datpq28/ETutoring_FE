@@ -7,7 +7,7 @@ import { formatTime, showTime } from "../../../utils/Date";
 import { useNavigate } from "react-router";
 
 const { Title, Text } = Typography;
-const userId = localStorage.getItem("userId");
+
 export default function UpcomingMeetings() {
   const [meetings, setMeetings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -15,6 +15,7 @@ export default function UpcomingMeetings() {
 
   useEffect(() => {
     const getAllMeetings = async () => {
+      const userId = localStorage.getItem("userId");
       const data = await fetchMeetingsByStudent(userId);
       if (data) {
         const threeMeeting = getThreeClosestUpcomingGroups(data, new Date());
