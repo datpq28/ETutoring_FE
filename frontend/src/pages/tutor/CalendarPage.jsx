@@ -10,7 +10,7 @@ import { io } from "socket.io-client";
 
 dayjs.extend(relativeTime);
 
-const socket = io("http://localhost:5090");
+const socket = io("https://etutoring-be.onrender.com");
 const { Content } = Layout;
 
 export default function CalendarPage() {
