@@ -75,7 +75,7 @@ export default function StudentLayout() {
     return () => {
       logoutChannel.close();
     };
-  }, []);
+  }, [navigate]);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -88,7 +88,6 @@ export default function StudentLayout() {
     };
     fetchUser();
   }, []);
-  console.log("user", user);
   const userMenu = (
     <Menu
       items={[
