@@ -207,7 +207,7 @@ export default function MeetingPageShared() {
 
     console.log("📤 Sending message:", messageData);
     socket.current.emit("send_message", messageData);
-    setMessages((prev) => [...prev, { sender: "You", text: messageInput }]);
+    setMessages((prev) => [...prev, { sender: socket.current.id, text: messageInput }]);
     setMessageInput("");
   };
 
