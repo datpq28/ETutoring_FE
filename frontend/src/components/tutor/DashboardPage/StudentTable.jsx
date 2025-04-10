@@ -2,9 +2,9 @@ import { CalendarOutlined } from "@ant-design/icons";
 import { Button, Card, Flex, Table, Typography } from "antd";
 import { useEffect, useState } from "react";
 import { viewListStudentByTutor } from "../../../../api_service/admin_service";
+import LoadingSection from "../../common/LoadingSection";
 
 const { Title, Text } = Typography;
-const userId = localStorage.getItem("userId");
 
 const columns = [
   {
@@ -26,14 +26,18 @@ const columns = [
 
 export default function StudentTable() {
   const [students, setStudents] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
+    setIsLoading(true);
     const fetchStudents = async () => {
+      const userId = localStorage.getItem("userId");
       const students = await viewListStudentByTutor(userId);
       console.log("students", students);
       setStudents(students);
     };
     fetchStudents();
+    setIsLoading(false);
   }, []);
 
   const dataSource = students.map((student, index) => ({
@@ -72,7 +76,11 @@ export default function StudentTable() {
         </Button>
       }
     >
-      <Table dataSource={dataSource} columns={columns} />
+      {isLoading ? (
+        <LoadingSection length={3} />
+      ) : (
+        <Table dataSource={dataSource} columns={columns} />
+      )}
     </Card>
   );
 }

@@ -7,7 +7,6 @@ import { formatTime, showTime } from "../../../utils/Date";
 import { useNavigate } from "react-router";
 
 const { Title, Text } = Typography;
-const userId = localStorage.getItem("userId");
 
 export default function UpcomingMeetings() {
   const [meetings, setMeetings] = useState([]);
@@ -15,6 +14,7 @@ export default function UpcomingMeetings() {
   let navigate = useNavigate();
   useEffect(() => {
     const getMeetings = async () => {
+      const userId = localStorage.getItem("userId");
       const data = await fetchMeetingsByTutor(userId);
       console.log(data, data);
       if (data) {
