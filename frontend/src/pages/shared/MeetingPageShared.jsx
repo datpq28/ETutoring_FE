@@ -26,7 +26,7 @@ export default function MeetingPageShared() {
   useEffect(() => {
     if (!meetingId) return;
 
-    socket.current = io("https://etutoring-1640-1.onrender.com"); // Initialize socket here
+    socket.current = io("https://etutoring-be.onrender.com"); // Initialize socket here
 
     let currentLocalStream;
 

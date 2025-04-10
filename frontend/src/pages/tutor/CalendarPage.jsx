@@ -7,7 +7,7 @@ import { getNotificationsByTutor,markNotificationAsRead  } from "../../../api_se
 import { useNavigate } from "react-router";
 import { io } from "socket.io-client";
 
-const socket = io("https://etutoring-1640-1.onrender.com");
+const socket = io("https://etutoring-be.onrender.com");
 const { Content } = Layout;
 
 export default function CalendarPage() {
@@ -213,21 +213,21 @@ export default function CalendarPage() {
                 </p>
 
                 {/* Conditionally render buttons based on the meeting date */}
-                {meetingDate.isBefore(tomorrow) && (
+                {meetingDate.isBefore(today) && (
                   <button className="attended-btn"
                   style={{ backgroundColor: "gray", color: "white", border: "none", padding: "8px 16px", cursor: "not-allowed" }}
                   disabled >
                     Attended
                   </button>
                 )}
-                {meetingDate.isSame(tomorrow) && role === "tutor" && (
+                {meetingDate.isSame(today) && role === "tutor" && (
                   <button className="start-meeting-btn"
                   style={{ backgroundColor: "green", color: "white", border: "none", padding: "8px 16px", cursor: "pointer" }}
                   onClick={() => handleStartMeeting(meeting)}>
                     Start Meeting
                   </button>
                 )}
-                {meetingDate.isAfter(tomorrow) && (
+                {meetingDate.isAfter(today) && (
                   <button className="is-coming-btn" 
                   style={{ backgroundColor: "blue", color: "white", border: "none", padding: "8px 16px", cursor: "not-allowed" }}
                   disabled>
